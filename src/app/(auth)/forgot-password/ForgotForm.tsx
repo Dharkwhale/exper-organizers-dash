@@ -1,0 +1,72 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useRef, useState, type FormEvent } from "react";
+import { AuthCard } from "@/components/auth/AuthCard";
+import { Button, buttonClasses } from "@/components/auth/Button";
+import { Field } from "@/components/auth/Field";
+import { friendlyMessage, requestReset } from "@/lib/auth/api";
+import { writeEmail } from "@/lib/auth/email-state";
+import { isEmail, normalizeEmail } from "@/lib/auth/validation";
+
+export function ForgotForm() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (submitting.current) return;
+
+    if (!isEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    setError(undefined);
+
+    submitting.current = true;
+    setBusy(true);
+    const clean = normalizeEmail(email);
+    const result = await requestReset(clean);
+    submitting.current = false;
+    setBusy(false);
+    if (!result.ok) {
+      setError(friendlyMessage(result));
+      return;
+    }
+    writeEmail(clean);
+    router.push("/check-inbox");
+  }
+
+  return (
+    <AuthCard title="Reset password">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        <Field
+          label="Email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          placeholder="tope@afterhours.studio"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={error}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" busy={busy}>
+            Send reset link
+          </Button>
+          <Link href="/sign-in" className={buttonClasses("secondary")}>
+            Back to sign in
+          </Link>
+        </div>
+        <p className="text-[11px] leading-relaxed text-muted">
+          No longer have access to that inbox? Ask your workspace owner to
+          change your email from Team settings.
+        </p>
+      </form>
+    </AuthCard>
+  );
+}
