@@ -144,7 +144,7 @@ describe("SignInForm", () => {
     expect(signInMock).toHaveBeenCalledWith("tope@x.io", "bad");
   });
 
-  test("confirms a successful sign-in with the workspace name", async () => {
+  test("goes to the overview after a successful sign-in", async () => {
     signInMock.mockResolvedValue({
       ok: true,
       data: {
@@ -157,9 +157,7 @@ describe("SignInForm", () => {
     });
     render(<SignInForm />);
     await fillAndSubmit("tope@x.io", "good-pass-1!");
-    expect(
-      await screen.findByText("Signed in to Afterhours studio"),
-    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
   });
 
   test("shows the password-updated notice after a reset", () => {

@@ -6,9 +6,10 @@ import { VerifyForm } from "./VerifyForm";
 
 const verifyMock = vi.hoisted(() => vi.fn());
 const resendMock = vi.hoisted(() => vi.fn());
+const push = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push }),
   usePathname: () => "/verify",
 }));
 
@@ -31,6 +32,7 @@ const signedIn = {
 
 beforeEach(() => {
   sessionStorage.clear();
+  push.mockClear();
   verifyMock.mockReset();
   resendMock.mockReset();
   verifyMock.mockResolvedValue(signedIn);
@@ -55,15 +57,13 @@ describe("VerifyForm", () => {
     expect(document.body).not.toHaveTextContent("undefined");
   });
 
-  test("verifies the typed code for the stored email and confirms sign-in", async () => {
+  test("verifies the typed code for the stored email and goes to the overview", async () => {
     writeEmail("tope@afterhours.studio");
     const user = userEvent.setup();
     render(<VerifyForm />);
     await user.click(box(1));
     await user.keyboard("482913");
-    expect(
-      await screen.findByText("Verified. Signed in to Afterhours studio."),
-    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
     expect(verifyMock).toHaveBeenCalledWith("tope@afterhours.studio", "482913");
   });
 

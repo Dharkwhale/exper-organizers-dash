@@ -41,6 +41,7 @@ export function friendlyMessage(failure: AuthFailure): string {
 
 type Endpoint =
   | "login"
+  | "logout"
   | "register"
   | "verify"
   | "resend"
@@ -125,6 +126,8 @@ async function post<T>(
 
 export const signIn = (email: string, password: string) =>
   post<SessionSummary>("login", "/api/auth/login", { email, password });
+
+export const signOut = () => post("logout", "/api/auth/logout", {});
 
 export const signUp = (input: {
   fullName: string;

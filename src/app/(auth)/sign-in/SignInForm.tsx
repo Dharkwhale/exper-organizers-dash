@@ -23,7 +23,6 @@ export function SignInForm() {
   const [emailError, setEmailError] = useState<string>();
   const [passwordError, setPasswordError] = useState<string>();
   const [formError, setFormError] = useState<string>();
-  const [signedInTo, setSignedInTo] = useState<string | null>(null);
   const submitting = useRef(false);
 
   async function handleSubmit(event: FormEvent) {
@@ -33,7 +32,6 @@ export function SignInForm() {
     setEmailError(undefined);
     setPasswordError(undefined);
     setFormError(undefined);
-    setSignedInTo(null);
 
     if (!isEmail(email)) {
       setEmailError("Enter a valid email address.");
@@ -53,7 +51,7 @@ export function SignInForm() {
 
     if (result.ok) {
       writeEmail(clean);
-      setSignedInTo(result.data.workspace?.name ?? "");
+      router.push("/overview");
       return;
     }
     switch (result.code) {
@@ -122,11 +120,6 @@ export function SignInForm() {
         {formError ? (
           <p role="alert" className="text-[11px] text-danger">
             {formError}
-          </p>
-        ) : null}
-        {signedInTo !== null ? (
-          <p role="status" className="text-xs text-accent">
-            {signedInTo ? `Signed in to ${signedInTo}` : "Signed in"}
           </p>
         ) : null}
 

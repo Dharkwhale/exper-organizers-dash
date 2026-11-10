@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/auth/Button";
@@ -16,11 +17,11 @@ function formatClock(seconds: number): string {
 }
 
 export function VerifyForm() {
+  const router = useRouter();
   const email = useStoredEmail();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
   const [invalid, setInvalid] = useState(false);
-  const [verifiedAs, setVerifiedAs] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const [resent, setResent] = useState(false);
@@ -52,7 +53,7 @@ export function VerifyForm() {
     if (result.ok) {
       setError(undefined);
       setInvalid(false);
-      setVerifiedAs(result.data.workspace?.name ?? "");
+      router.push("/overview");
     } else if (result.code === "bad_code") {
       setInvalid(true);
       setError("That code isn't right. Try again.");
@@ -96,7 +97,6 @@ export function VerifyForm() {
             setCode(next);
             setError(undefined);
             setInvalid(false);
-            setVerifiedAs(null);
           }}
           onComplete={verify}
         />
@@ -116,13 +116,6 @@ export function VerifyForm() {
             Verify email
           </Button>
         </div>
-        {verifiedAs !== null ? (
-          <p role="status" className="text-xs text-accent">
-            {verifiedAs
-              ? `Verified. Signed in to ${verifiedAs}.`
-              : "Verified. You're signed in."}
-          </p>
-        ) : null}
         {resent ? (
           <p role="status" className="text-xs text-muted">
             Code sent again.

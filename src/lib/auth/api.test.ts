@@ -6,6 +6,7 @@ import {
   resendCode,
   setPassword,
   signIn,
+  signOut,
   signUp,
   verifyCode,
 } from "./api";
@@ -196,5 +197,27 @@ describe("results", () => {
     const result = await signIn("a@b.co", "pw");
     expect(result).toMatchObject({ ok: false, code: "unknown" });
     expect(result.ok === false && result.message).toBeTruthy();
+  });
+});
+
+describe("signOut", () => {
+  test("posts an empty JSON body to the logout route and succeeds on 204", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    const result = await signOut();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/auth/logout");
+    expect(init.method).toBe("POST");
+    expect(init.headers["content-type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toEqual({});
+    expect(result).toEqual({ ok: true, data: undefined });
+  });
+
+  test("a network failure reads as a friendly message", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    expect(await signOut()).toMatchObject({
+      ok: false,
+      code: "network",
+      message: "Couldn't reach the server. Try again.",
+    });
   });
 });

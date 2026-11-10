@@ -19,6 +19,7 @@ vi.mock("next/headers", () => ({
 
 import { POST as forgot } from "./forgot-password/route";
 import { POST as login } from "./login/route";
+import { POST as logout } from "./logout/route";
 import { POST as register } from "./register/route";
 import { POST as resend } from "./resend/route";
 import { POST as resetPassword } from "./reset-password/route";
@@ -258,5 +259,65 @@ describe("password reset", () => {
     const res = await resetPassword(req({ newPassword: "another-strong-1!" }));
     expect(res.status).toBe(401);
     expect(store.has("exper_recovery")).toBe(false);
+  });
+});
+
+describe("logout", () => {
+  const signedInCookies = () => {
+    store.set("exper_at", { value: "at-1", options: {} });
+    store.set("exper_rt", { value: "rt-1", options: {} });
+    store.set("exper_recovery", { value: "{}", options: {} });
+  };
+  const cookiesLeft = () =>
+    ["exper_at", "exper_rt", "exper_recovery"].filter((name) => store.has(name));
+
+  test("ends the session on the backend with the access token and clears every cookie", async () => {
+    signedInCookies();
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+
+    const res = await logout(req({}));
+
+    expect(res.status).toBe(204);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://backend.test/api/v1/auth/sign-out");
+    expect(init.method).toBe("POST");
+    expect(init.headers.authorization).toBe("Bearer at-1");
+    expect(cookiesLeft()).toEqual([]);
+  });
+
+  test("still clears the cookies when the backend refuses", async () => {
+    signedInCookies();
+    fetchMock.mockResolvedValue(json({ message: "Unauthorized" }, { status: 401 }));
+    const res = await logout(req({}));
+    expect(res.status).toBe(204);
+    expect(cookiesLeft()).toEqual([]);
+  });
+
+  test("still clears the cookies when the backend is unreachable", async () => {
+    signedInCookies();
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    const res = await logout(req({}));
+    expect(res.status).toBe(204);
+    expect(cookiesLeft()).toEqual([]);
+  });
+
+  test("with no session it does not call the backend", async () => {
+    const res = await logout(req({}));
+    expect(res.status).toBe(204);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("refuses a non-JSON request and leaves the session alone", async () => {
+    signedInCookies();
+    const form = new Request("http://localhost/api/auth/logout", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "a=b",
+    });
+    const res = await logout(form);
+    expect(res.status).toBe(415);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(cookiesLeft()).toEqual(["exper_at", "exper_rt", "exper_recovery"]);
   });
 });

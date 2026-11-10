@@ -37,6 +37,17 @@ export async function setSession(tokens: Tokens): Promise<void> {
   });
 }
 
+export async function readAccessToken(): Promise<string | undefined> {
+  return (await cookies()).get(COOKIE.access)?.value;
+}
+
+export async function clearSession(): Promise<void> {
+  const jar = await cookies();
+  jar.delete(COOKIE.access);
+  jar.delete(COOKIE.refresh);
+  jar.delete(COOKIE.recovery);
+}
+
 export async function setRecovery(tokens: Tokens): Promise<void> {
   const jar = await cookies();
   const { accessToken, refreshToken, expiresAt } = tokens;
