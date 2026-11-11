@@ -1,11 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { readEmail } from "@/lib/auth/email-state";
 import { SignUpForm } from "./SignUpForm";
 
 const push = vi.hoisted(() => vi.fn());
 const signUpMock = vi.hoisted(() => vi.fn());
+const googleMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -15,11 +17,35 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/auth/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/auth/api")>()),
   signUp: signUpMock,
+  signUpWithGoogle: googleMock,
 }));
+
+// Google's real button is an iframe; the stub hands over a credential on click.
+vi.mock("@/components/auth/GoogleButton", async () => {
+  const React = await import("react");
+  return {
+    GoogleButton: (props: {
+      verb: string;
+      disabled?: boolean;
+      onCredential: (credential: { idToken: string; nonce: string }) => void;
+    }) =>
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          disabled: props.disabled,
+          onClick: () => props.onCredential({ idToken: "g-tok", nonce: "raw" }),
+        },
+        `${props.verb} with Google (test)`,
+      ),
+    GooglePlaceholder: () => null,
+  };
+});
 
 beforeEach(() => {
   push.mockClear();
   signUpMock.mockReset();
+  googleMock.mockReset();
   signUpMock.mockResolvedValue({ ok: true, data: undefined });
   sessionStorage.clear();
 });
@@ -66,6 +92,116 @@ describe("SignUpForm", () => {
     render(<SignUpForm />);
     await user.type(screen.getByLabelText("Password"), "abcdefghijk1!");
     expect(screen.getByRole("status")).toHaveTextContent("Strong");
+  });
+
+  describe("with Google", () => {
+    const googleButton = () =>
+      screen.getByRole("button", { name: "Sign up with Google (test)" });
+    const ready = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.type(screen.getByLabelText("Workspace name"), " Afterhours studio ");
+      await user.click(screen.getByRole("checkbox", { name: /I agree to the Terms/ }));
+    };
+
+    test("waits for a workspace name and the Terms before it can be used", async () => {
+      const user = userEvent.setup();
+      render(<SignUpForm />);
+      expect(googleButton()).toBeDisabled();
+      await user.type(screen.getByLabelText("Workspace name"), "Afterhours studio");
+      expect(googleButton()).toBeDisabled();
+      await user.click(screen.getByRole("checkbox", { name: /I agree to the Terms/ }));
+      expect(googleButton()).toBeEnabled();
+    });
+
+    test("signs up with the workspace and the terms, then goes to the overview", async () => {
+      googleMock.mockResolvedValue({
+        ok: true,
+        data: {
+          user: { id: "u1", email: "tope@x.io" },
+          roles: ["organizer"],
+          isAdmin: false,
+          workspace: { id: "w1", name: "Afterhours studio" },
+          data: [],
+        },
+      });
+      const user = userEvent.setup();
+      render(<SignUpForm />);
+      await ready(user);
+      await user.click(googleButton());
+      await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+      expect(googleMock).toHaveBeenCalledWith({
+        idToken: "g-tok",
+        nonce: "raw",
+        workspaceName: "Afterhours studio",
+        acceptedTerms: true,
+      });
+      expect(screen.getByRole("button", { name: "Create account" })).toHaveAttribute(
+        "aria-busy",
+        "true",
+      );
+    });
+
+    test("shows a Google failure and frees the button", async () => {
+      googleMock.mockResolvedValue({
+        ok: false,
+        code: "google_failed",
+        message: "Google sign-up failed",
+      });
+      const user = userEvent.setup();
+      render(<SignUpForm />);
+      await ready(user);
+      await user.click(googleButton());
+      expect(await screen.findByText("Google sign-up failed")).toBeInTheDocument();
+      expect(push).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Create account" })).toBeEnabled();
+    });
+  });
+
+  test("stays busy after a successful sign-up, until the page changes", async () => {
+    const user = userEvent.setup();
+    render(<SignUpForm />);
+    await fillValid(user);
+    await submit(user);
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/verify"));
+    const button = screen.getByRole("button", { name: "Create account" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  test("comes back usable, with the password cleared, when its page is shown again", async () => {
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <SignUpForm />
+      </Activity>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(tree("visible"));
+    await fillValid(user);
+    await submit(user);
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/verify"));
+
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
+
+    const button = screen.getByRole("button", { name: "Create account" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
+  });
+
+  test("a refused sign-up frees the button again", async () => {
+    signUpMock.mockResolvedValue({
+      ok: false,
+      code: "email_taken",
+      message: "That email is already registered",
+    });
+    const user = userEvent.setup();
+    render(<SignUpForm />);
+    await fillValid(user);
+    await submit(user);
+    await screen.findByText("That email is already registered");
+    const button = screen.getByRole("button", { name: "Create account" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
   });
 
   test("registers with the organizer fields and continues to verify", async () => {

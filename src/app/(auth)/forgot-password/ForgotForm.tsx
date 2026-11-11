@@ -9,6 +9,7 @@ import { Field } from "@/components/auth/Field";
 import { friendlyMessage, requestReset } from "@/lib/auth/api";
 import { writeEmail } from "@/lib/auth/email-state";
 import { isEmail, normalizeEmail } from "@/lib/auth/validation";
+import { useOnShow } from "@/lib/use-on-show";
 
 export function ForgotForm() {
   const router = useRouter();
@@ -16,6 +17,12 @@ export function ForgotForm() {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
+
+  // Coming back to this page: not stuck busy.
+  useOnShow(() => {
+    submitting.current = false;
+    setBusy(false);
+  });
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -31,12 +38,13 @@ export function ForgotForm() {
     setBusy(true);
     const clean = normalizeEmail(email);
     const result = await requestReset(clean);
-    submitting.current = false;
-    setBusy(false);
     if (!result.ok) {
+      submitting.current = false;
+      setBusy(false);
       setError(friendlyMessage(result));
       return;
     }
+    // Stay busy until the next page arrives.
     writeEmail(clean);
     router.push("/check-inbox");
   }

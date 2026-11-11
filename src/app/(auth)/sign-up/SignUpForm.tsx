@@ -10,7 +10,13 @@ import { Field } from "@/components/auth/Field";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { SocialButtons } from "@/components/auth/SocialButtons";
 import { StrengthMeter } from "@/components/auth/StrengthMeter";
-import { friendlyMessage, signUp } from "@/lib/auth/api";
+import {
+  friendlyMessage,
+  signUp,
+  signUpWithGoogle,
+  type GoogleCredential,
+} from "@/lib/auth/api";
+import { useOnShow } from "@/lib/use-on-show";
 import { writeEmail } from "@/lib/auth/email-state";
 import {
   isEmail,
@@ -34,6 +40,13 @@ export function SignUpForm() {
   const [formError, setFormError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
+
+  // Coming back to this page: not stuck busy, and no old password.
+  useOnShow(() => {
+    submitting.current = false;
+    setBusy(false);
+    setPassword("");
+  });
 
   function validate(): Errors {
     const next: Errors = {};
@@ -67,8 +80,11 @@ export function SignUpForm() {
       password,
       acceptedTerms: agreed,
     });
-    submitting.current = false;
-    setBusy(false);
+    // On success the button stays busy until the next page arrives.
+    if (!result.ok) {
+      submitting.current = false;
+      setBusy(false);
+    }
 
     if (result.ok) {
       writeEmail(clean);
@@ -78,6 +94,31 @@ export function SignUpForm() {
     } else {
       setFormError(friendlyMessage(result));
     }
+  }
+
+  // Google signs the person up on its own, so the two things it needs from the
+  // form (a workspace name and the Terms) have to be in before it can be used.
+  const googleReady = workspace.trim().length >= 2 && agreed;
+
+  async function handleGoogle(credential: GoogleCredential) {
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setFormError(undefined);
+
+    const result = await signUpWithGoogle({
+      ...credential,
+      workspaceName: workspace.trim(),
+      acceptedTerms: agreed,
+    });
+    // Google has verified the email, so there is no code step: straight in.
+    if (result.ok) {
+      router.push("/overview");
+      return;
+    }
+    submitting.current = false;
+    setBusy(false);
+    setFormError(friendlyMessage(result));
   }
 
   return (
@@ -157,12 +198,17 @@ export function SignUpForm() {
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" busy={busy}>
+        <div>
+          <Button type="submit" busy={busy} className="w-full py-3.5">
             Create account
           </Button>
-          <SocialButtons verb="Sign up" />
         </div>
+        <SocialButtons
+          verb="Sign up"
+          onGoogle={handleGoogle}
+          googleDisabled={!googleReady}
+          googleHint="Add your workspace name and agree to the Terms first."
+        />
       </form>
     </AuthCard>
   );

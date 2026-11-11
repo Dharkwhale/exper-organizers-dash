@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { writeEmail } from "@/lib/auth/email-state";
 import { VerifyForm } from "./VerifyForm";
@@ -65,6 +66,57 @@ describe("VerifyForm", () => {
     await user.keyboard("482913");
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
     expect(verifyMock).toHaveBeenCalledWith("tope@afterhours.studio", "482913");
+  });
+
+  test("stays busy after a good code, until the page changes", async () => {
+    writeEmail("tope@afterhours.studio");
+    const user = userEvent.setup();
+    render(<VerifyForm />);
+    await user.click(box(1));
+    await user.keyboard("482913");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+    const button = screen.getByRole("button", { name: "Verify email" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  test("comes back usable, with the code cleared, when its page is shown again", async () => {
+    writeEmail("tope@afterhours.studio");
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <VerifyForm />
+      </Activity>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(tree("visible"));
+    await user.click(box(1));
+    await user.keyboard("482913");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
+
+    const button = screen.getByRole("button", { name: "Verify email" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+    expect(box(1)).toHaveValue("");
+  });
+
+  test("a wrong code frees the button again", async () => {
+    verifyMock.mockResolvedValue({
+      ok: false,
+      code: "bad_code",
+      message: "Invalid token",
+    });
+    writeEmail("tope@afterhours.studio");
+    const user = userEvent.setup();
+    render(<VerifyForm />);
+    await user.click(box(1));
+    await user.keyboard("000000");
+    await screen.findByText("That code isn't right. Try again.");
+    const button = screen.getByRole("button", { name: "Verify email" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
   });
 
   test("flags a wrong code on every box", async () => {

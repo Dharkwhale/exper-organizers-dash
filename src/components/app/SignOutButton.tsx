@@ -3,12 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { signOut } from "@/lib/auth/api";
+import { useOnShow } from "@/lib/use-on-show";
 
 export function SignOutButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const working = useRef(false);
+
+  // A signed-out shell can be brought back hidden-then-shown; never stuck busy.
+  useOnShow(() => {
+    working.current = false;
+    setBusy(false);
+    setFailed(false);
+  });
 
   async function handleClick() {
     if (working.current) return;

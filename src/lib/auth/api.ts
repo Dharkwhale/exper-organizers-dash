@@ -16,6 +16,7 @@ export type AuthErrorCode =
   | "link_expired"
   | "password_refused"
   | "session_expired"
+  | "google_failed"
   | "validation"
   | "network"
   | "unknown";
@@ -41,6 +42,7 @@ export function friendlyMessage(failure: AuthFailure): string {
 
 type Endpoint =
   | "login"
+  | "google"
   | "logout"
   | "register"
   | "verify"
@@ -57,6 +59,10 @@ function classify(endpoint: Endpoint, status: number, message: string): AuthErro
       if (status === 403) {
         return /not verified/i.test(message) ? "not_verified" : "not_organizer";
       }
+      break;
+    case "google":
+      if (status === 401) return "google_failed";
+      if (status === 403) return "not_organizer";
       break;
     case "register":
       if (status === 409) return "email_taken";
@@ -126,6 +132,23 @@ async function post<T>(
 
 export const signIn = (email: string, password: string) =>
   post<SessionSummary>("login", "/api/auth/login", { email, password });
+
+export type GoogleCredential = { idToken: string; nonce: string };
+
+// One backend route for both: it signs in an existing organiser, or creates the
+// workspace when the workspace name and the accepted terms come along.
+export const signInWithGoogle = ({ idToken, nonce }: GoogleCredential) =>
+  post<SessionSummary>("google", "/api/auth/google", { idToken, nonce });
+
+export const signUpWithGoogle = (
+  input: GoogleCredential & { workspaceName: string; acceptedTerms: boolean },
+) =>
+  post<SessionSummary>("google", "/api/auth/google", {
+    idToken: input.idToken,
+    nonce: input.nonce,
+    workspaceName: input.workspaceName,
+    acceptedTerms: input.acceptedTerms,
+  });
 
 export const signOut = () => post("logout", "/api/auth/logout", {});
 

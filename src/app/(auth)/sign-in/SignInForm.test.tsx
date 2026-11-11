@@ -1,11 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { readEmail } from "@/lib/auth/email-state";
 import { SignInForm } from "./SignInForm";
 
 const push = vi.hoisted(() => vi.fn());
 const signInMock = vi.hoisted(() => vi.fn());
+const googleMock = vi.hoisted(() => vi.fn());
 const search = vi.hoisted(() => ({ current: new URLSearchParams() }));
 
 vi.mock("next/navigation", () => ({
@@ -17,7 +19,28 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/auth/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/auth/api")>()),
   signIn: signInMock,
+  signInWithGoogle: googleMock,
 }));
+
+// Google's real button is an iframe; the stub hands over a credential on click.
+vi.mock("@/components/auth/GoogleButton", async () => {
+  const React = await import("react");
+  return {
+    GoogleButton: (props: {
+      verb: string;
+      onCredential: (credential: { idToken: string; nonce: string }) => void;
+    }) =>
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => props.onCredential({ idToken: "g-tok", nonce: "raw" }),
+        },
+        `${props.verb} with Google (test)`,
+      ),
+    GooglePlaceholder: () => null,
+  };
+});
 
 const wrongPassword = {
   ok: false,
@@ -28,6 +51,7 @@ const wrongPassword = {
 beforeEach(() => {
   push.mockClear();
   signInMock.mockReset();
+  googleMock.mockReset();
   signInMock.mockResolvedValue(wrongPassword);
   search.current = new URLSearchParams();
   sessionStorage.clear();
@@ -158,6 +182,161 @@ describe("SignInForm", () => {
     render(<SignInForm />);
     await fillAndSubmit("tope@x.io", "good-pass-1!");
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+  });
+
+  test("stays busy after a successful sign-in, until the page changes", async () => {
+    signInMock.mockResolvedValue({
+      ok: true,
+      data: {
+        user: { id: "u1", email: "tope@x.io" },
+        roles: ["organizer"],
+        isAdmin: false,
+        workspace: { id: "w1", name: "Afterhours studio" },
+        data: [],
+      },
+    });
+    render(<SignInForm />);
+    await fillAndSubmit("tope@x.io", "good-pass-1!");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+    const button = screen.getByRole("button", { name: "Sign in" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  test("comes back usable, with the password cleared, when its page is shown again", async () => {
+    // Next keeps the page it navigated away from alive, hidden. After a
+    // sign-out the sign-in page is shown again with its old state.
+    signInMock.mockResolvedValue({
+      ok: true,
+      data: {
+        user: { id: "u1", email: "tope@x.io" },
+        roles: ["organizer"],
+        isAdmin: false,
+        workspace: { id: "w1", name: "Afterhours studio" },
+        data: [],
+      },
+    });
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <SignInForm />
+      </Activity>
+    );
+    const { rerender } = render(tree("visible"));
+    await fillAndSubmit("tope@x.io", "good-pass-1!");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
+
+    const button = screen.getByRole("button", { name: "Sign in" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
+    expect(screen.getByLabelText("Email")).toHaveValue("tope@x.io");
+  });
+
+  test("an unverified account also stays busy on its way to verify", async () => {
+    signInMock.mockResolvedValue({
+      ok: false,
+      code: "not_verified",
+      message: "Email not verified",
+    });
+    render(<SignInForm />);
+    await fillAndSubmit("tope@x.io", "good-pass-1!");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/verify"));
+    expect(screen.getByRole("button", { name: "Sign in" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+  });
+
+  test("a failed sign-in frees the button again", async () => {
+    render(<SignInForm />);
+    await fillAndSubmit("tope@x.io", "bad");
+    await screen.findByText(/Invalid email or password/);
+    const button = screen.getByRole("button", { name: "Sign in" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+  });
+
+  describe("with Google", () => {
+    const session = {
+      user: { id: "u1", email: "tope@x.io" },
+      roles: ["organizer"],
+      isAdmin: false,
+      workspace: { id: "w1", name: "Afterhours studio" },
+      data: [],
+    };
+    const clickGoogle = async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Sign in with Google (test)" }));
+    };
+
+    test("signs in with the Google credential and goes to the overview, staying busy", async () => {
+      googleMock.mockResolvedValue({ ok: true, data: session });
+      render(<SignInForm />);
+      await clickGoogle();
+      await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/overview"));
+      expect(googleMock).toHaveBeenCalledWith({ idToken: "g-tok", nonce: "raw" });
+      expect(screen.getByRole("button", { name: "Sign in" })).toHaveAttribute(
+        "aria-busy",
+        "true",
+      );
+    });
+
+    test("a Google account that isn't an organiser is pointed to sign-up", async () => {
+      googleMock.mockResolvedValue({
+        ok: false,
+        code: "not_organizer",
+        message: "Not an organiser",
+      });
+      render(<SignInForm />);
+      await clickGoogle();
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent("This Google account isn't an organiser yet.");
+      expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute(
+        "href",
+        "/sign-up",
+      );
+      expect(push).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Sign in" })).not.toHaveAttribute("aria-busy");
+    });
+
+    test("a rate limit says how long to wait", async () => {
+      googleMock.mockResolvedValue({
+        ok: false,
+        code: "rate_limited",
+        message: "Too many",
+        retryAfterSeconds: 300,
+      });
+      render(<SignInForm />);
+      await clickGoogle();
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Too many attempts. Try again in 5 minutes.",
+      );
+    });
+
+    test("any other failure shows its message and frees the button", async () => {
+      googleMock.mockResolvedValue({
+        ok: false,
+        code: "google_failed",
+        message: "Google sign-in failed",
+      });
+      render(<SignInForm />);
+      await clickGoogle();
+      expect(await screen.findByRole("alert")).toHaveTextContent("Google sign-in failed");
+      expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    });
+
+    test("two quick credentials sign in once", async () => {
+      googleMock.mockReturnValue(new Promise(() => {}));
+      render(<SignInForm />);
+      const user = userEvent.setup();
+      const button = screen.getByRole("button", { name: "Sign in with Google (test)" });
+      await user.click(button);
+      await user.click(button);
+      expect(googleMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   test("shows the password-updated notice after a reset", () => {

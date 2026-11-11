@@ -39,6 +39,13 @@ export function Button({
       className={buttonClasses(variant, className)}
       {...rest}
     >
+      {busy ? (
+        <span
+          data-spinner
+          aria-hidden="true"
+          className="mr-2 size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-pulse"
+        />
+      ) : null}
       {children}
     </button>
   );

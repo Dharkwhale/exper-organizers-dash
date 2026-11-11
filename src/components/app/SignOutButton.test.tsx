@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { SignOutButton } from "./SignOutButton";
 
@@ -22,6 +23,28 @@ describe("SignOutButton", () => {
     await user.click(screen.getByRole("button", { name: "Sign out" }));
     await vi.waitFor(() => expect(replace).toHaveBeenCalledWith("/sign-in"));
     expect(signOutMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("is usable again when its page is shown again after a sign-out", async () => {
+    // Next keeps a page it navigated away from alive, hidden, and restores it
+    // later with its state; a signed-out shell must not come back stuck busy.
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <SignOutButton />
+      </Activity>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(tree("visible"));
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await vi.waitFor(() => expect(replace).toHaveBeenCalledWith("/sign-in"));
+
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
+
+    const button = screen.getByRole("button", { name: "Sign out" });
+    expect(button).not.toHaveAttribute("aria-busy");
+    await user.click(button);
+    expect(signOutMock).toHaveBeenCalledTimes(2);
   });
 
   test("a double click signs out once", async () => {

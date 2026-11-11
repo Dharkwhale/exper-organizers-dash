@@ -113,7 +113,7 @@ export function CodeInput({
             if (index > value.length) refs.current[value.length]?.focus();
             else event.target.select();
           }}
-          className={`size-10 rounded-lg border bg-bg text-center text-base font-semibold text-fg outline-none transition-colors focus:border-accent ${
+          className={`size-12 rounded-2xl border bg-surface text-center text-base font-semibold text-fg outline-none transition-colors focus:border-accent ${
             invalid ? "border-danger" : "border-transparent"
           }`}
         />
