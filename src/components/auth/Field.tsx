@@ -35,7 +35,7 @@ export function Field({
         {labelAside}
       </div>
       <div
-        className={`flex items-center rounded-lg border bg-bg px-3 transition-colors focus-within:border-accent ${
+        className={`flex items-center rounded-full border bg-surface px-5 transition-colors focus-within:border-accent ${
           error ? "border-danger" : "border-transparent"
         }`}
       >
@@ -43,7 +43,7 @@ export function Field({
           id={id}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-fg outline-none placeholder:text-muted/60"
+          className="min-w-0 flex-1 bg-transparent py-3.5 text-sm text-fg outline-none placeholder:text-muted/60"
           {...input}
         />
         {trailing}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PendingDot } from "./PendingDot";
 
 const base = "block py-2 text-[13px]";
 
@@ -20,6 +21,7 @@ export function NavItem({
         className={`${base} ${current ? "font-semibold text-accent" : "text-muted hover:text-fg"}`}
       >
         {label}
+        <PendingDot />
       </Link>
     );
   }

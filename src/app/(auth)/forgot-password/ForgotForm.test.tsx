@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { readEmail } from "@/lib/auth/email-state";
 import { ForgotForm } from "./ForgotForm";
@@ -38,6 +39,53 @@ describe("ForgotForm", () => {
     ).toBeInTheDocument();
     expect(requestResetMock).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  test("stays busy after the link is sent, until the page changes", async () => {
+    const user = userEvent.setup();
+    render(<ForgotForm />);
+    await user.type(screen.getByLabelText("Email"), "tope@afterhours.studio");
+    await send(user);
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/check-inbox"));
+    const button = screen.getByRole("button", { name: "Send reset link" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  test("comes back usable when its page is shown again", async () => {
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <ForgotForm />
+      </Activity>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(tree("visible"));
+    await user.type(screen.getByLabelText("Email"), "tope@afterhours.studio");
+    await send(user);
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/check-inbox"));
+
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
+
+    const button = screen.getByRole("button", { name: "Send reset link" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+  });
+
+  test("a failed request frees the button again", async () => {
+    requestResetMock.mockResolvedValue({
+      ok: false,
+      code: "network",
+      message: "Couldn't reach the server. Try again.",
+    });
+    const user = userEvent.setup();
+    render(<ForgotForm />);
+    await user.type(screen.getByLabelText("Email"), "tope@afterhours.studio");
+    await send(user);
+    await screen.findByText("Couldn't reach the server. Try again.");
+    const button = screen.getByRole("button", { name: "Send reset link" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
   });
 
   test("stores the normalized email and moves to check-inbox", async () => {

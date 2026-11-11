@@ -9,9 +9,15 @@ import { Checkbox } from "@/components/auth/Checkbox";
 import { Field } from "@/components/auth/Field";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { SocialButtons } from "@/components/auth/SocialButtons";
-import { friendlyMessage, signIn } from "@/lib/auth/api";
+import {
+  friendlyMessage,
+  signIn,
+  signInWithGoogle,
+  type GoogleCredential,
+} from "@/lib/auth/api";
 import { writeEmail } from "@/lib/auth/email-state";
 import { isEmail, normalizeEmail } from "@/lib/auth/validation";
+import { useOnShow } from "@/lib/use-on-show";
 
 export function SignInForm() {
   const router = useRouter();
@@ -23,7 +29,15 @@ export function SignInForm() {
   const [emailError, setEmailError] = useState<string>();
   const [passwordError, setPasswordError] = useState<string>();
   const [formError, setFormError] = useState<string>();
+  const [notOrganizer, setNotOrganizer] = useState(false);
   const submitting = useRef(false);
+
+  // Coming back after a sign-out: not stuck busy, and no old password.
+  useOnShow(() => {
+    submitting.current = false;
+    setBusy(false);
+    setPassword("");
+  });
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -32,6 +46,7 @@ export function SignInForm() {
     setEmailError(undefined);
     setPasswordError(undefined);
     setFormError(undefined);
+    setNotOrganizer(false);
 
     if (!isEmail(email)) {
       setEmailError("Enter a valid email address.");
@@ -46,8 +61,13 @@ export function SignInForm() {
     setBusy(true);
     const clean = normalizeEmail(email);
     const result = await signIn(clean, password);
-    submitting.current = false;
-    setBusy(false);
+    // On the way to another page the button stays busy until that page
+    // arrives; it is freed only when the person has to try again.
+    const leaving = result.ok || result.code === "not_verified";
+    if (!leaving) {
+      submitting.current = false;
+      setBusy(false);
+    }
 
     if (result.ok) {
       writeEmail(clean);
@@ -68,6 +88,27 @@ export function SignInForm() {
       default:
         setFormError(friendlyMessage(result));
     }
+  }
+
+  async function handleGoogle(credential: GoogleCredential) {
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setEmailError(undefined);
+    setPasswordError(undefined);
+    setFormError(undefined);
+    setNotOrganizer(false);
+
+    const result = await signInWithGoogle(credential);
+    // On success the form stays busy until the next page arrives.
+    if (result.ok) {
+      router.push("/overview");
+      return;
+    }
+    submitting.current = false;
+    setBusy(false);
+    if (result.code === "not_organizer") setNotOrganizer(true);
+    else setFormError(friendlyMessage(result));
   }
 
   return (
@@ -113,7 +154,7 @@ export function SignInForm() {
         />
 
         <div>
-          <Button type="submit" busy={busy}>
+          <Button type="submit" busy={busy} className="w-full py-3.5">
             Sign in
           </Button>
         </div>
@@ -124,7 +165,15 @@ export function SignInForm() {
         ) : null}
 
         <div className="pt-1">
-          <SocialButtons verb="Sign in" />
+          {notOrganizer ? (
+            <p role="alert" className="mb-3 text-[11px] text-danger">
+              This Google account isn&apos;t an organiser yet.{" "}
+              <Link href="/sign-up" className="underline hover:text-fg">
+                Create an account
+              </Link>
+            </p>
+          ) : null}
+          <SocialButtons verb="Sign in" onGoogle={handleGoogle} />
         </div>
       </form>
     </AuthCard>

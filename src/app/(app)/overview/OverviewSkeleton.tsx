@@ -1,6 +1,7 @@
 export function OverviewSkeleton() {
   return (
     <div
+      role="status"
       aria-busy="true"
       aria-label="Loading your overview"
       className="mx-auto flex max-w-6xl animate-pulse flex-col gap-6"

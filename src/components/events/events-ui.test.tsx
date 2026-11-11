@@ -219,6 +219,16 @@ describe("an event row", () => {
 describe("EventsSkeleton", () => {
   test("announces that it is loading", () => {
     render(<EventsSkeleton />);
-    expect(screen.getByLabelText("Loading your events")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status", { name: "Loading your events" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+  });
+
+  test("mirrors the page: tabs, a search row and a few event rows", () => {
+    const { container } = render(<EventsSkeleton />);
+    expect(container.querySelectorAll("[data-skeleton-tab]")).toHaveLength(4);
+    expect(container.querySelector("[data-skeleton-search]")).not.toBeNull();
+    expect(container.querySelectorAll("[data-skeleton-row]")).toHaveLength(3);
   });
 });

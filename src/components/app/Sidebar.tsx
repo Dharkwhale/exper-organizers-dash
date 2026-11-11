@@ -1,19 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SOON_LABELS } from "./nav";
 import { NavItem } from "./NavItem";
 import { SignOutButton } from "./SignOutButton";
-
-const SOON = [
-  "Experience Builder",
-  "Live Control",
-  "Attendees",
-  "Sales",
-  "Moments",
-  "Reports",
-  "Payouts",
-  "Team / Roles",
-  "Settings",
-];
 
 export function Sidebar({
   open,
@@ -53,7 +42,7 @@ export function Sidebar({
       <nav aria-label="Main" className="mt-10 flex flex-col">
         <NavItem label="Overview" href="/overview" current={section === "overview"} />
         <NavItem label="Events" href="/events" current={section === "events"} />
-        {SOON.map((label) => (
+        {SOON_LABELS.map((label) => (
           <NavItem key={label} label={label} />
         ))}
       </nav>

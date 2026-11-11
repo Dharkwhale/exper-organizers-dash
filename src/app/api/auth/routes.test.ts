@@ -18,6 +18,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST as forgot } from "./forgot-password/route";
+import { POST as google } from "./google/route";
 import { POST as login } from "./login/route";
 import { POST as logout } from "./logout/route";
 import { POST as register } from "./register/route";
@@ -117,6 +118,82 @@ describe("login", () => {
     fetchMock.mockResolvedValue(json(signedIn()));
     await login(req({ email: "a@b.co", password: "pw" }, { "user-agent": "Mozilla/5.0 (Mac)" }));
     expect(fetchMock.mock.calls[0][1].headers["user-agent"]).toContain("Mozilla/5.0 (Mac)");
+  });
+});
+
+describe("google", () => {
+  test("sends the ID token to the organizer Google route, sets httpOnly cookies and never returns tokens", async () => {
+    fetchMock.mockResolvedValue(json(signedIn()));
+    const res = await google(req({ idToken: "g-id-token", nonce: "raw-nonce" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://backend.test/api/v1/organizer/auth/google");
+    expect(JSON.parse(init.body)).toEqual({ idToken: "g-id-token", nonce: "raw-nonce" });
+
+    expect(body).not.toHaveProperty("accessToken");
+    expect(body).not.toHaveProperty("refreshToken");
+    expect(body.workspace).toEqual({ id: "w1", name: "Afterhours studio" });
+    expect(store.get("exper_at")!.value).toBe("at-1");
+    expect(store.get("exper_at")!.options).toMatchObject({
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
+    expect(store.get("exper_rt")!.value).toBe("rt-1");
+  });
+
+  test("forwards the workspace and the terms for a sign-up", async () => {
+    fetchMock.mockResolvedValue(json(signedIn()));
+    await google(
+      req({
+        idToken: "g-id-token",
+        nonce: "raw-nonce",
+        workspaceName: "Afterhours studio",
+        acceptedTerms: true,
+      }),
+    );
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      idToken: "g-id-token",
+      nonce: "raw-nonce",
+      workspaceName: "Afterhours studio",
+      acceptedTerms: true,
+    });
+  });
+
+  test("passes a 403 through with its message and sets no cookies", async () => {
+    fetchMock.mockResolvedValue(
+      json({ statusCode: 403, message: "Not an organiser" }, { status: 403 }),
+    );
+    const res = await google(req({ idToken: "g-id-token" }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ message: "Not an organiser" });
+    expect(store.size).toBe(0);
+  });
+
+  test("passes Retry-After through on a 429", async () => {
+    fetchMock.mockResolvedValue(
+      json(
+        { message: "Too many" },
+        { status: 429, headers: { "retry-after": "300", "content-type": "application/json" } },
+      ),
+    );
+    const res = await google(req({ idToken: "g-id-token" }));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("300");
+  });
+
+  test("rejects a request that is not JSON", async () => {
+    const res = await google(
+      new Request("http://localhost/api/auth/google", {
+        method: "POST",
+        headers: { "content-type": "text/plain" },
+        body: "idToken=x",
+      }),
+    );
+    expect(res.status).toBe(415);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

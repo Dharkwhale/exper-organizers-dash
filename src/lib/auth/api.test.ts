@@ -6,8 +6,10 @@ import {
   resendCode,
   setPassword,
   signIn,
+  signInWithGoogle,
   signOut,
   signUp,
+  signUpWithGoogle,
   verifyCode,
 } from "./api";
 
@@ -197,6 +199,65 @@ describe("results", () => {
     const result = await signIn("a@b.co", "pw");
     expect(result).toMatchObject({ ok: false, code: "unknown" });
     expect(result.ok === false && result.message).toBeTruthy();
+  });
+});
+
+describe("Google sign-in", () => {
+  test("signInWithGoogle posts the ID token and nonce and returns the session", async () => {
+    fetchMock.mockResolvedValue(reply(200, signedIn));
+    const result = await signInWithGoogle({ idToken: "g-tok", nonce: "raw" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/auth/google");
+    expect(init.method).toBe("POST");
+    expect(init.headers["content-type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toEqual({ idToken: "g-tok", nonce: "raw" });
+    expect(result).toEqual({ ok: true, data: signedIn });
+  });
+
+  test("signUpWithGoogle adds the workspace name and the accepted terms", async () => {
+    fetchMock.mockResolvedValue(reply(200, signedIn));
+    await signUpWithGoogle({
+      idToken: "g-tok",
+      nonce: "raw",
+      workspaceName: "Afterhours studio",
+      acceptedTerms: true,
+    });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      idToken: "g-tok",
+      nonce: "raw",
+      workspaceName: "Afterhours studio",
+      acceptedTerms: true,
+    });
+  });
+
+  test.each([
+    [403, "not_organizer"],
+    [401, "google_failed"],
+    [400, "validation"],
+    [429, "rate_limited"],
+  ] as const)("a %i reads as %s", async (status, code) => {
+    fetchMock.mockResolvedValue(reply(status, { message: "nope" }));
+    expect(await signInWithGoogle({ idToken: "g-tok", nonce: "raw" })).toMatchObject({
+      ok: false,
+      code,
+    });
+  });
+
+  test("a rate limit carries how long to wait", async () => {
+    fetchMock.mockResolvedValue(reply(429, { message: "Too many" }, { "retry-after": "300" }));
+    expect(await signInWithGoogle({ idToken: "g-tok", nonce: "raw" })).toMatchObject({
+      code: "rate_limited",
+      retryAfterSeconds: 300,
+    });
+  });
+
+  test("a network failure reads as a friendly message", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    expect(await signInWithGoogle({ idToken: "g-tok", nonce: "raw" })).toMatchObject({
+      ok: false,
+      code: "network",
+      message: "Couldn't reach the server. Try again.",
+    });
   });
 });
 

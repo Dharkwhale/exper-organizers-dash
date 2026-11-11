@@ -8,6 +8,7 @@ import { Button } from "@/components/auth/Button";
 import { CodeInput } from "@/components/auth/CodeInput";
 import { friendlyMessage, resendCode, verifyCode } from "@/lib/auth/api";
 import { useStoredEmail } from "@/lib/auth/email-state";
+import { useOnShow } from "@/lib/use-on-show";
 
 const RESEND_SECONDS = 60;
 const LOST_EMAIL = "We lost track of your email. Start again from sign up.";
@@ -26,6 +27,13 @@ export function VerifyForm() {
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const [resent, setResent] = useState(false);
   const working = useRef(false);
+
+  // Coming back to this page: not stuck busy, and no old code.
+  useOnShow(() => {
+    working.current = false;
+    setBusy(false);
+    setCode("");
+  });
 
   const counting = seconds > 0;
   useEffect(() => {
@@ -47,8 +55,11 @@ export function VerifyForm() {
     working.current = true;
     setBusy(true);
     const result = await verifyCode(email, value);
-    working.current = false;
-    setBusy(false);
+    // On success the button stays busy until the next page arrives.
+    if (!result.ok) {
+      working.current = false;
+      setBusy(false);
+    }
 
     if (result.ok) {
       setError(undefined);

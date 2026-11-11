@@ -11,12 +11,26 @@
   --color-accent-fg: #0a0a0a;
   --color-danger: #ff5a4f;
 
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-jakarta-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
   color-scheme: dark;
+}
+
+/*
+ * Chrome paints autofilled fields with its own bluish background. Our inputs
+ * are transparent over a dark pill, so delay that background indefinitely and
+ * keep the text white; the pill's own fill shows through as usual.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-fg);
+  caret-color: var(--color-fg);
+  transition: background-color 600000s ease-in-out 0s;
 }
 
 body {

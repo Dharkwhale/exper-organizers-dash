@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ResetForm } from "./ResetForm";
 
@@ -158,6 +159,51 @@ describe("the new password", () => {
     await submit(user, "brand-new-pass-9#", "brand-new-pass-9#");
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/sign-in?reset=1"));
     expect(setPasswordMock).toHaveBeenCalledWith("brand-new-pass-9#", true);
+  });
+
+  test("stays busy after the password is set, until the page changes", async () => {
+    const user = await renderReady();
+    await submit(user, "brand-new-pass-9#", "brand-new-pass-9#");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/sign-in?reset=1"));
+    const button = screen.getByRole("button", { name: "Update password" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  test("comes back usable, with the passwords cleared, when its page is shown again", async () => {
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <ResetForm />
+      </Activity>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(tree("visible"));
+    await screen.findByLabelText("New password");
+    await submit(user, "brand-new-pass-9#", "brand-new-pass-9#");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/sign-in?reset=1"));
+
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
+
+    const button = await screen.findByRole("button", { name: "Update password" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+    expect(screen.getByLabelText("New password")).toHaveValue("");
+    expect(screen.getByLabelText("Confirm password")).toHaveValue("");
+  });
+
+  test("a refused password frees the button again", async () => {
+    setPasswordMock.mockResolvedValue({
+      ok: false,
+      code: "password_refused",
+      message: "You've used that one before",
+    });
+    const user = await renderReady();
+    await submit(user, "brand-new-pass-9#", "brand-new-pass-9#");
+    await screen.findByText("You've used that one before");
+    const button = screen.getByRole("button", { name: "Update password" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-busy");
   });
 
   test("signs out other devices unless the box is cleared", async () => {

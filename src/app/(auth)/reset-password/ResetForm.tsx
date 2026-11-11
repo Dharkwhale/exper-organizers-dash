@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/auth/Checkbox";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { checkResetLink, friendlyMessage, setPassword } from "@/lib/auth/api";
 import { passwordChecks } from "@/lib/auth/validation";
+import { useOnShow } from "@/lib/use-on-show";
 
 const LINK_EXPIRED = "This reset link has expired or was already used.";
 const SESSION_EXPIRED = "Your reset session expired. Request a new link.";
@@ -128,6 +129,14 @@ function NewPasswordForm({
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
 
+  // Coming back to this page: not stuck busy, and no old passwords.
+  useOnShow(() => {
+    submitting.current = false;
+    setBusy(false);
+    setNewPassword("");
+    setConfirm("");
+  });
+
   const checks = passwordChecks(password);
   const rulesMet = checks.length && checks.number && checks.symbol;
   const state = (met: boolean): RuleState => (met ? "met" : "unmet");
@@ -151,8 +160,11 @@ function NewPasswordForm({
     submitting.current = true;
     setBusy(true);
     const result = await setPassword(password, signOutOthers);
-    submitting.current = false;
-    setBusy(false);
+    // On success the button stays busy until the next page arrives.
+    if (!result.ok) {
+      submitting.current = false;
+      setBusy(false);
+    }
 
     if (result.ok) {
       router.push("/sign-in?reset=1");

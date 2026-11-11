@@ -12,10 +12,10 @@ export default function SignInPage() {
         <>
           Doors
           <br />
-          open.
+          open<span className="text-accent">.</span>
         </>
       }
-      subtext="Sign in to run your events and see how each night went."
+      subtext="Sign in to run your events and see how each night went, prompt by prompt."
     >
       <Suspense>
         <SignInForm />
