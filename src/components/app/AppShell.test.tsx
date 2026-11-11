@@ -28,8 +28,6 @@ function renderShell(props: Partial<React.ComponentProps<typeof AppShell>> = {})
 }
 
 const SOON = [
-  "Experience Builder",
-  "Live Control",
   "Attendees",
   "Sales",
   "Moments",
@@ -54,7 +52,7 @@ describe("AppShell", () => {
   test("shows the breadcrumb with workspace, page and person", () => {
     renderShell();
     expect(
-      screen.getByText("Afterhours studio / Overview · Tope Adewale"),
+      screen.getByText("Afterhours studio / Overview / Tope Adewale"),
     ).toBeInTheDocument();
   });
 
@@ -84,7 +82,7 @@ describe("AppShell", () => {
       "aria-current",
     );
     expect(
-      screen.getByText("Afterhours studio / Events · Tope Adewale"),
+      screen.getByText("Afterhours studio / Events / Tope Adewale"),
     ).toBeInTheDocument();
   });
 
@@ -95,6 +93,41 @@ describe("AppShell", () => {
       "aria-current",
       "page",
     );
+  });
+
+  test("Experience Builder is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Experience Builder" })).toHaveAttribute(
+      "href",
+      "/experience-builder",
+    );
+    first.unmount();
+    nav.pathname = "/experience-builder";
+    renderShell();
+    expect(
+      screen.getByRole("link", { name: "Experience Builder" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      screen.getByText("Afterhours studio / Experience Builder / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Live Control is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Live Control" })).toHaveAttribute(
+      "href",
+      "/live-control",
+    );
+    first.unmount();
+    nav.pathname = "/live-control";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Live Control" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Live Control / Tope Adewale"),
+    ).toBeInTheDocument();
   });
 
   test.each(SOON)("%s is shown but disabled until its page exists", (label) => {

@@ -12,7 +12,7 @@ export function Sidebar({
   roleLine,
 }: {
   open: boolean;
-  section: "overview" | "events";
+  section: "overview" | "events" | "experience-builder" | "live-control";
   workspaceName: string | null;
   userName: string | null;
   roleLine: string;
@@ -42,6 +42,16 @@ export function Sidebar({
       <nav aria-label="Main" className="mt-10 flex flex-col">
         <NavItem label="Overview" href="/overview" current={section === "overview"} />
         <NavItem label="Events" href="/events" current={section === "events"} />
+        <NavItem
+          label="Experience Builder"
+          href="/experience-builder"
+          current={section === "experience-builder"}
+        />
+        <NavItem
+          label="Live Control"
+          href="/live-control"
+          current={section === "live-control"}
+        />
         {SOON_LABELS.map((label) => (
           <NavItem key={label} label={label} />
         ))}

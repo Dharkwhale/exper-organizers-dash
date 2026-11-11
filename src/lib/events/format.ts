@@ -36,5 +36,5 @@ export function formatEventRange(
   const end = localTime(endsAt, zone);
   const extra = Math.round(end.dayNumber - start.dayNumber);
   const suffix = extra > 0 ? ` (+${extra} ${extra === 1 ? "day" : "days"})` : "";
-  return `${start.date} · ${start.time}-${end.time}${suffix}`;
+  return `${start.date} · ${start.time} - ${end.time}${suffix}`;
 }

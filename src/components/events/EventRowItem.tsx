@@ -1,7 +1,8 @@
+import Link from "next/link";
+import { buttonClasses } from "@/components/auth/Button";
 import { formatEventRange } from "@/lib/events/format";
 import type { EventRow } from "@/lib/events/types";
 import { utcOffset } from "@/lib/overview/format";
-import { ActionButton } from "@/components/overview/ActionButton";
 
 const count = (n: number) => n.toLocaleString("en-GB");
 
@@ -16,8 +17,8 @@ export function EventRowItem({ event }: { event: EventRow }) {
   const zone = `${event.timezone} · ${utcOffset(event.timezone, new Date(event.startsAt))}`;
 
   return (
-    <article className="flex flex-col gap-4 border-b border-border/60 py-6 last:border-b-0 sm:flex-row sm:items-center">
-      <div className="h-24 w-20 shrink-0 overflow-hidden rounded-2xl bg-surface-2">
+    <article className="flex flex-col gap-4 border-b border-border/60 py-6 last:border-b-0 sm:flex-row sm:items-center sm:gap-6">
+      <div className="size-20 shrink-0 overflow-hidden rounded-2xl bg-surface-2 sm:size-24">
         {event.coverImageUrl ? (
           // Decorative: the event title beside it names the row.
           // eslint-disable-next-line @next/next/no-img-element
@@ -28,20 +29,27 @@ export function EventRowItem({ event }: { event: EventRow }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <h3 className="truncate text-xl font-medium">{event.title}</h3>
+        <h3 className="truncate text-xl font-medium tracking-tight">{event.title}</h3>
         {place ? <p className="mt-1 text-[11px] text-muted">{place}</p> : null}
-        <p className="mt-2 text-xs">{formatEventRange(event.startsAt, event.endsAt, event.timezone)}</p>
+        <p className="mt-2 text-xs">
+          {formatEventRange(event.startsAt, event.endsAt, event.timezone)}
+        </p>
         <p className="mt-1 text-[11px] text-muted">{zone}</p>
       </div>
 
-      <div className="flex flex-col gap-3 sm:items-start">
+      <div className="flex flex-col gap-3 sm:items-end sm:text-right">
         <div>
           <p className="text-xs">{tickets(event)}</p>
           {event.currency ? (
             <p className="mt-1 text-[11px] text-muted">{`Event currency · ${event.currency}`}</p>
           ) : null}
         </div>
-        <ActionButton variant="secondary">Manage event</ActionButton>
+        <Link
+          href="/events/setup/basics"
+          className={buttonClasses("secondary")}
+        >
+          Manage event
+        </Link>
       </div>
     </article>
   );

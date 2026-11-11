@@ -8,6 +8,10 @@ import { LiveEventCard } from "@/components/overview/LiveEventCard";
 import { PageHeading } from "@/components/overview/PageHeading";
 import { RoomPulse } from "@/components/overview/RoomPulse";
 import { TeamActivity } from "@/components/overview/TeamActivity";
+import {
+  designComingUp,
+  designOverviewHero,
+} from "@/lib/overview/mock";
 import { getOverview } from "@/lib/server/overview";
 
 export async function OverviewContent() {
@@ -38,29 +42,25 @@ export async function OverviewContent() {
     );
   }
 
-  const { hero, comingUp, mock } = result.data;
+  const { hero: apiHero, comingUp: apiComingUp, mock } = result.data;
+
+  // Design phase: when the API has nothing live yet, show the Figma populated state.
+  const hero = apiHero ?? designOverviewHero();
+  const comingUp =
+    apiComingUp.total > 0 ? apiComingUp : designComingUp();
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <PageHeading now={new Date()} />
 
-      {hero ? (
-        <LiveEventCard hero={hero} activeNow={mock.activeNow} />
-      ) : (
-        <Card>
-          <p className="text-sm">No live or upcoming events</p>
-          <p className="mt-1 text-[11px] text-muted">
-            When you publish an event, it will show up here.
-          </p>
-        </Card>
-      )}
+      <LiveEventCard hero={hero} activeNow={mock.activeNow} />
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
           <ComingUp items={comingUp.items} total={comingUp.total} />
           <AttentionList items={mock.attention} />
         </div>
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <RoomPulse room={mock.room} />
           <TeamActivity items={mock.team} />
         </div>

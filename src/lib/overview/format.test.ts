@@ -75,6 +75,20 @@ describe("formatEventLine", () => {
     ).toBe("31 Oct · 19:00 WAT · Lagos");
   });
 
+  test("appends capacity when both places values are present", () => {
+    expect(
+      formatEventLine(
+        {
+          startsAt: "2026-10-31T18:00:00Z",
+          venue: { name: "Terra Kulture", city: "Lagos" },
+          placesTaken: 683,
+          capacity: 900,
+        },
+        "Africa/Lagos",
+      ),
+    ).toBe("31 Oct · 19:00 WAT · Terra Kulture · Lagos · 683 / 900 places");
+  });
+
   test("shows only the date and time when the venue is empty", () => {
     const line = formatEventLine(
       { startsAt: "2026-10-31T18:00:00Z", venue: { name: null, city: null } },

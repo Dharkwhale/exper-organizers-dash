@@ -12,7 +12,7 @@ export function AttentionList({ items }: { items: MockOverview["attention"] }) {
             <li key={item.title}>
               <p className="flex items-baseline gap-3 text-sm">
                 <span>{item.title}</span>
-                <span aria-disabled="true" className="text-[11px] text-muted">
+                <span aria-disabled="true" className="text-[11px] text-fg/80">
                   {`${item.action} →`}
                 </span>
               </p>

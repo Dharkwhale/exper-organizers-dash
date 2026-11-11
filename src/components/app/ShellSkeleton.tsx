@@ -31,6 +31,8 @@ export function ShellSkeleton() {
         <ul className="mt-10 flex flex-col text-[13px] text-muted">
           <li className="py-2">Overview</li>
           <li className="py-2">Events</li>
+          <li className="py-2">Experience Builder</li>
+          <li className="py-2">Live Control</li>
           {SOON_LABELS.map((label) => (
             <li key={label} className="py-2">
               {label}

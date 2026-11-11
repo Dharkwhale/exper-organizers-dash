@@ -68,4 +68,17 @@ describe("EventsContent", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't reach the server. Try again.");
     expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", "/events");
   });
+
+  test("with no API events it fills the Figma design list", async () => {
+    getEvents.mockResolvedValue({
+      ok: true,
+      data: { events: [], truncated: false, nowIso: "2026-11-11T12:00:00Z" },
+    });
+    render(await EventsContent());
+    expect(screen.getByRole("heading", { name: "Sound/Scape" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Rooftop Sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Accra After Dark" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nairobi Frequency" })).toBeInTheDocument();
+    expect(screen.getByText("4 events")).toBeInTheDocument();
+  });
 });

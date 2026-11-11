@@ -22,7 +22,7 @@ export function ComingUp({
             <li key={item.id}>
               <p className="flex items-baseline gap-3 text-sm">
                 <span>{item.title}</span>
-                <span aria-disabled="true" className="text-[11px] text-muted">
+                <span aria-disabled="true" className="text-[11px] text-fg/80">
                   Manage ↗
                 </span>
               </p>

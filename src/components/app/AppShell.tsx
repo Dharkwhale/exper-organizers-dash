@@ -4,7 +4,32 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 
-const SECTION_LABEL = { overview: "Overview", events: "Events" } as const;
+type Section =
+  | "overview"
+  | "events"
+  | "experience-builder"
+  | "live-control";
+
+const SECTION_LABEL: Record<Section, string> = {
+  overview: "Overview",
+  events: "Events",
+  "experience-builder": "Experience Builder",
+  "live-control": "Live Control",
+};
+
+function sectionFromPath(pathname: string): Section {
+  if (pathname === "/events" || pathname.startsWith("/events/")) return "events";
+  if (
+    pathname === "/experience-builder" ||
+    pathname.startsWith("/experience-builder/")
+  ) {
+    return "experience-builder";
+  }
+  if (pathname === "/live-control" || pathname.startsWith("/live-control/")) {
+    return "live-control";
+  }
+  return "overview";
+}
 
 export function AppShell({
   workspaceName,
@@ -19,8 +44,7 @@ export function AppShell({
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const section =
-    pathname === "/events" || pathname.startsWith("/events/") ? "events" : "overview";
+  const section = sectionFromPath(pathname);
 
   return (
     <div className="min-h-dvh bg-bg lg:pl-52">
@@ -45,7 +69,7 @@ export function AppShell({
           </button>
           <nav aria-label="Breadcrumb">
             <p className="text-xs text-muted">
-              {`${workspaceName ?? "Your workspace"} / ${SECTION_LABEL[section]} · ${userName ?? "Your account"}`}
+              {`${workspaceName ?? "Your workspace"} / ${SECTION_LABEL[section]} / ${userName ?? "Your account"}`}
             </p>
           </nav>
         </header>

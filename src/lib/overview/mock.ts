@@ -1,4 +1,4 @@
-import type { MockOverview } from "./types";
+import type { ComingUpItem, MockOverview, Overview } from "./types";
 
 // Everything here is MOCK: no endpoint exists for it yet. Swap each field for a
 // real call as the backend grows; nothing else in the app knows these are fake.
@@ -54,4 +54,85 @@ export function mockOverview(): MockOverview {
     // MOCK: no endpoint (workspace roles are not exposed as a label)
     roleLine: "Owner · All events",
   };
+}
+
+const neonSummary = {
+  id: "figma-neon-solstice",
+  title: "Neon Solstice.",
+  status: "published",
+  startsAt: "2026-10-25T19:00:00Z",
+  endsAt: "2026-10-26T02:30:00Z",
+  venue: { name: "Landmark Beach", city: "Lagos" },
+};
+
+/** Figma Overview populated state — used while the design phase has no live events. */
+export function designOverviewHero(): NonNullable<Overview["hero"]> {
+  return {
+    mode: "live",
+    event: neonSummary,
+    detail: {
+      ...neonSummary,
+      coverImageUrl: "/overview/neon-solstice.jpg",
+      timezone: "Africa/Lagos",
+      capacity: 1240,
+      venue: {
+        name: "Landmark Beach",
+        city: "Lagos",
+        address: "Victoria Island",
+      },
+    },
+    checkedIn: 1216,
+    attendees: 1240,
+    checkedInCapped: false,
+  };
+}
+
+export function designComingUp(): { items: ComingUpItem[]; total: number } {
+  const items: ComingUpItem[] = [
+    {
+      id: "figma-sound-scape",
+      title: "Sound/Scape",
+      status: "published",
+      startsAt: "2026-10-31T18:00:00Z",
+      endsAt: "2026-10-31T23:00:00Z",
+      timezone: "Africa/Lagos",
+      venue: { name: "Terra Kulture", city: "Lagos" },
+      placesTaken: 683,
+      capacity: 900,
+    },
+    {
+      id: "figma-rooftop",
+      title: "Rooftop Sessions",
+      status: "published",
+      startsAt: "2026-11-06T18:30:00Z",
+      endsAt: "2026-11-06T23:00:00Z",
+      timezone: "Europe/London",
+      venue: { name: null, city: "London" },
+      placesTaken: 214,
+      capacity: 280,
+    },
+    {
+      id: "figma-accra",
+      title: "Accra After Dark",
+      status: "published",
+      startsAt: "2026-11-14T20:00:00Z",
+      endsAt: "2026-11-15T02:00:00Z",
+      timezone: "Africa/Accra",
+      venue: { name: "Alliance Française", city: "Accra" },
+      placesTaken: 401,
+      capacity: 500,
+    },
+    {
+      id: "figma-nairobi",
+      title: "Nairobi Frequency",
+      status: "published",
+      startsAt: "2026-11-21T17:00:00Z",
+      endsAt: "2026-11-21T23:00:00Z",
+      timezone: "Africa/Nairobi",
+      venue: { name: "Ngong Racecourse", city: "Nairobi" },
+      placesTaken: 912,
+      capacity: 1200,
+    },
+  ];
+  return { items, total: items.length };
 }

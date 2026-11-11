@@ -15,7 +15,12 @@ export type EventDetail = EventSummary & {
 };
 
 /** A "Coming up" row: the list endpoint gives no timezone, so it is fetched per row. */
-export type ComingUpItem = EventSummary & { timezone: string };
+export type ComingUpItem = EventSummary & {
+  timezone: string;
+  /** Design / future capacity readout; omit when unknown. */
+  placesTaken?: number | null;
+  capacity?: number | null;
+};
 
 export type Hero = { mode: "live" | "upcoming"; event: EventSummary };
 

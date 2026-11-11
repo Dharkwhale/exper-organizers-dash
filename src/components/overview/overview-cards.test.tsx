@@ -48,11 +48,11 @@ describe("PageHeading", () => {
     ).toBeInTheDocument();
   });
 
-  test("Create event is present but disabled until it has somewhere to go", () => {
+  test("Create event opens the setup flow", () => {
     render(<PageHeading now={new Date("2026-10-25T12:00:00Z")} />);
-    expect(screen.getByRole("button", { name: "Create event" })).toHaveAttribute(
-      "aria-disabled",
-      "true",
+    expect(screen.getByRole("link", { name: "Create event" })).toHaveAttribute(
+      "href",
+      "/events/setup/basics",
     );
   });
 });
@@ -80,14 +80,16 @@ describe("LiveEventCard", () => {
     expect(screen.getByText("active in the last 5 minutes")).toBeInTheDocument();
   });
 
-  test("Open Live Control and Check in guests are disabled for now", () => {
+  test("Open Live Control goes to Live Control; Check in guests stays disabled", () => {
     render(<LiveEventCard hero={liveHero} activeNow={876} />);
-    for (const name of ["Open Live Control", "Check in guests"]) {
-      expect(screen.getByRole("button", { name })).toHaveAttribute(
-        "aria-disabled",
-        "true",
-      );
-    }
+    expect(screen.getByRole("link", { name: "Open Live Control" })).toHaveAttribute(
+      "href",
+      "/live-control",
+    );
+    expect(screen.getByRole("button", { name: "Check in guests" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
   test("an upcoming event says UP NEXT and hides the live-activity number", () => {
@@ -173,6 +175,24 @@ describe("ComingUp", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Rooftop Sessions")).toBeInTheDocument();
     expect(screen.getByText("6 Nov · 18:30 GMT · London")).toBeInTheDocument();
+  });
+
+  test("appends capacity when places are known", () => {
+    render(
+      <ComingUp
+        items={[
+          {
+            ...items[0],
+            placesTaken: 683,
+            capacity: 900,
+          },
+        ]}
+        total={1}
+      />,
+    );
+    expect(
+      screen.getByText("31 Oct · 19:00 WAT · Terra Kulture · Lagos · 683 / 900 places"),
+    ).toBeInTheDocument();
   });
 
   test("the header counts every upcoming event, singular or plural", () => {

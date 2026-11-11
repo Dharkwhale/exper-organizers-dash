@@ -161,14 +161,21 @@ describe("EventsBrowser", () => {
     expect(screen.queryByText(/most recent events/)).not.toBeInTheDocument();
   });
 
-  test("Create event, Calendar view and every Manage event are disabled placeholders", () => {
+  test("Create event and Manage event open setup; Calendar view stays disabled", () => {
     renderBrowser();
-    for (const name of ["Create event", "Calendar view"]) {
-      expect(screen.getByRole("button", { name })).toHaveAttribute("aria-disabled", "true");
-    }
-    const manage = screen.getAllByRole("button", { name: "Manage event" });
+    expect(screen.getByRole("link", { name: "Create event" })).toHaveAttribute(
+      "href",
+      "/events/setup/basics",
+    );
+    expect(screen.getByRole("button", { name: "Calendar view" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    const manage = screen.getAllByRole("link", { name: "Manage event" });
     expect(manage).toHaveLength(3);
-    for (const button of manage) expect(button).toHaveAttribute("aria-disabled", "true");
+    for (const link of manage) {
+      expect(link).toHaveAttribute("href", "/events/setup/basics");
+    }
   });
 
   test("shows the page title, subtitle and timezone note", () => {
@@ -196,7 +203,7 @@ describe("an event row", () => {
   test("shows place, date and time, zone, tickets and currency", () => {
     const view = rowFor("Sound/Scape");
     expect(view.getByText("Landmark Beach · Lagos")).toBeInTheDocument();
-    expect(view.getByText("21 Nov 2026 · 19:00-23:30")).toBeInTheDocument();
+    expect(view.getByText("21 Nov 2026 · 19:00 - 23:30")).toBeInTheDocument();
     expect(view.getByText("Africa/Lagos · UTC+01:00")).toBeInTheDocument();
     expect(view.getByText("683 / 900")).toBeInTheDocument();
     expect(view.getByText("Event currency · NGN")).toBeInTheDocument();
@@ -204,7 +211,7 @@ describe("an event row", () => {
 
   test("marks an event that runs past midnight", () => {
     const view = rowFor("Accra After Dark");
-    expect(view.getByText("7 Nov 2026 · 20:00-02:00 (+1 day)")).toBeInTheDocument();
+    expect(view.getByText("7 Nov 2026 · 20:00 - 02:00 (+1 day)")).toBeInTheDocument();
   });
 
   test("an event with nothing known shows dashes and never the word null", () => {

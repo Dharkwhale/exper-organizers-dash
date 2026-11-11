@@ -67,12 +67,18 @@ export function formatEventLine(
   event: {
     startsAt: string;
     venue: { name: string | null; city: string | null };
+    placesTaken?: number | null;
+    capacity?: number | null;
   },
   timeZone: string,
 ): string {
   const { date, time } = dayAndTime(event.startsAt, timeZone);
   const label = zoneLabel(timeZone, new Date(event.startsAt));
-  return [date, `${time} ${label}`, event.venue.name, event.venue.city]
+  const places =
+    typeof event.placesTaken === "number" && typeof event.capacity === "number"
+      ? `${event.placesTaken.toLocaleString("en-GB")} / ${event.capacity.toLocaleString("en-GB")} places`
+      : null;
+  return [date, `${time} ${label}`, event.venue.name, event.venue.city, places]
     .filter(Boolean)
     .join(" · ");
 }
