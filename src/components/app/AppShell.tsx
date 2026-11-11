@@ -8,13 +8,25 @@ type Section =
   | "overview"
   | "events"
   | "experience-builder"
-  | "live-control";
+  | "live-control"
+  | "attendees"
+  | "sales"
+  | "moments"
+  | "payouts"
+  | "team"
+  | "settings";
 
 const SECTION_LABEL: Record<Section, string> = {
   overview: "Overview",
   events: "Events",
   "experience-builder": "Experience Builder",
   "live-control": "Live Control",
+  attendees: "Attendees",
+  sales: "Sales",
+  moments: "Moments",
+  payouts: "Payouts",
+  team: "Team / Roles",
+  settings: "Settings",
 };
 
 function sectionFromPath(pathname: string): Section {
@@ -27,6 +39,24 @@ function sectionFromPath(pathname: string): Section {
   }
   if (pathname === "/live-control" || pathname.startsWith("/live-control/")) {
     return "live-control";
+  }
+  if (pathname === "/attendees" || pathname.startsWith("/attendees/")) {
+    return "attendees";
+  }
+  if (pathname === "/sales" || pathname.startsWith("/sales/")) {
+    return "sales";
+  }
+  if (pathname === "/moments" || pathname.startsWith("/moments/")) {
+    return "moments";
+  }
+  if (pathname === "/payouts" || pathname.startsWith("/payouts/")) {
+    return "payouts";
+  }
+  if (pathname === "/team" || pathname.startsWith("/team/")) {
+    return "team";
+  }
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) {
+    return "settings";
   }
   return "overview";
 }

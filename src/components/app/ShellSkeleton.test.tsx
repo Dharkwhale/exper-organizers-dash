@@ -18,6 +18,7 @@ describe("ShellSkeleton", () => {
       "Live Control",
       "Attendees",
       "Sales",
+
       "Moments",
       "Reports",
       "Payouts",

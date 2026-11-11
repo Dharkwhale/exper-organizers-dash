@@ -33,6 +33,13 @@ export function ShellSkeleton() {
           <li className="py-2">Events</li>
           <li className="py-2">Experience Builder</li>
           <li className="py-2">Live Control</li>
+          <li className="py-2">Attendees</li>
+          <li className="py-2">Sales</li>
+          <li className="py-2">Moments</li>
+          <li className="py-2">Reports</li>
+          <li className="py-2">Payouts</li>
+          <li className="py-2">Team / Roles</li>
+          <li className="py-2">Settings</li>
           {SOON_LABELS.map((label) => (
             <li key={label} className="py-2">
               {label}

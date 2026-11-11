@@ -12,7 +12,17 @@ export function Sidebar({
   roleLine,
 }: {
   open: boolean;
-  section: "overview" | "events" | "experience-builder" | "live-control";
+  section:
+    | "overview"
+    | "events"
+    | "experience-builder"
+    | "live-control"
+    | "attendees"
+    | "sales"
+    | "moments"
+    | "payouts"
+    | "team"
+    | "settings";
   workspaceName: string | null;
   userName: string | null;
   roleLine: string;
@@ -51,6 +61,37 @@ export function Sidebar({
           label="Live Control"
           href="/live-control"
           current={section === "live-control"}
+        />
+        <NavItem
+          label="Attendees"
+          href="/attendees"
+          current={section === "attendees"}
+        />
+        <NavItem
+          label="Sales"
+          href="/sales"
+          current={section === "sales"}
+        />
+        <NavItem
+          label="Moments"
+          href="/moments"
+          current={section === "moments"}
+        />
+        <NavItem label="Reports" />
+        <NavItem
+          label="Payouts"
+          href="/payouts"
+          current={section === "payouts"}
+        />
+        <NavItem
+          label="Team / Roles"
+          href="/team"
+          current={section === "team"}
+        />
+        <NavItem
+          label="Settings"
+          href="/settings"
+          current={section === "settings"}
         />
         {SOON_LABELS.map((label) => (
           <NavItem key={label} label={label} />

@@ -27,15 +27,7 @@ function renderShell(props: Partial<React.ComponentProps<typeof AppShell>> = {})
   );
 }
 
-const SOON = [
-  "Attendees",
-  "Sales",
-  "Moments",
-  "Reports",
-  "Payouts",
-  "Team / Roles",
-  "Settings",
-];
+const SOON = ["Reports"];
 
 describe("AppShell", () => {
   test("renders the page it wraps", () => {
@@ -127,6 +119,114 @@ describe("AppShell", () => {
     );
     expect(
       screen.getByText("Afterhours studio / Live Control / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Attendees is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Attendees" })).toHaveAttribute(
+      "href",
+      "/attendees",
+    );
+    first.unmount();
+    nav.pathname = "/attendees";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Attendees" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Attendees / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Sales is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Sales" })).toHaveAttribute(
+      "href",
+      "/sales",
+    );
+    first.unmount();
+    nav.pathname = "/sales";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Sales" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Sales / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Moments is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Moments" })).toHaveAttribute(
+      "href",
+      "/moments",
+    );
+    first.unmount();
+    nav.pathname = "/moments";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Moments" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Moments / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Payouts is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Payouts" })).toHaveAttribute(
+      "href",
+      "/payouts",
+    );
+    first.unmount();
+    nav.pathname = "/payouts";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Payouts" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Payouts / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Team / Roles is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Team / Roles" })).toHaveAttribute(
+      "href",
+      "/team",
+    );
+    first.unmount();
+    nav.pathname = "/team";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Team / Roles" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Team / Roles / Tope Adewale"),
+    ).toBeInTheDocument();
+  });
+
+  test("Settings is a real link and becomes current on its page", () => {
+    const first = renderShell();
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+      "href",
+      "/settings",
+    );
+    first.unmount();
+    nav.pathname = "/settings";
+    renderShell();
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByText("Afterhours studio / Settings / Tope Adewale"),
     ).toBeInTheDocument();
   });
 
